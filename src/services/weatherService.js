@@ -3,7 +3,6 @@ import axios from 'axios';
 const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY;
 const BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
 
-// Créer une instance axios avec des paramètres par défaut
 const weatherAPI = axios.create({
     baseURL: BASE_URL,
     params: {
@@ -11,13 +10,12 @@ const weatherAPI = axios.create({
         units: 'metric',
         lang: 'fr'
     },
-    timeout: 5000 // timeout après 5 secondes
+    timeout: 5000
 });
 
-// Cache avec limite de taille
 const MAX_CACHE_SIZE = 10;
 const cache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 5 * 60 * 1000;
 
 const cleanCache = () => {
     if (cache.size > MAX_CACHE_SIZE) {
