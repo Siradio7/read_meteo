@@ -1,97 +1,109 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect, useCallback, memo } from 'react';
+import { getWeatherByCity, getWeatherByCoordinates } from './services/weatherService';
+import WeatherDisplay from './components/WeatherDisplay';
 import 'animate.css';
+
+// Mémoiser le composant WeatherDisplay
+const MemoizedWeatherDisplay = memo(WeatherDisplay);
 
 function App() {
     const [city, setCity] = useState('');
     const [weather, setWeather] = useState(null);
     const [error, setError] = useState(null);
     const [locationError, setLocationError] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const API_KEY = '7f8a298784aea522c3d479ad2d45869a';
-
-    const getWeatherByCity = async (e) => {
+    const handleCitySearch = useCallback(async (e) => {
         e.preventDefault();
-        try {
-            const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric&lang=fr`);
-            setWeather(response.data);
-            setError(null);
-        } catch (error) {
-            setError('Ville non trouvée');
-            setWeather(null);
-            console.error(error)
-        }
-    };
+        if (!city.trim()) return;
 
-    const getWeatherByCoordinates = async (latitude, longitude) => {
+        setIsLoading(true);
+        setError(null);
+        
         try {
-            const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric&lang=fr`);
-            setWeather(response.data);
-            setLocationError(null);
+            const data = await getWeatherByCity(city);
+            setWeather(data);
         } catch (error) {
-            setLocationError('Impossible de récupérer les données météo');
+            setError(error.message);
             setWeather(null);
+        } finally {
+            setIsLoading(false);
         }
-    };
+    }, [city]);
+
+    const handleGeolocation = useCallback(async (position) => {
+        const { latitude, longitude } = position.coords;
+        setIsLoading(true);
+        setLocationError(null);
+
+        try {
+            const data = await getWeatherByCoordinates(latitude, longitude);
+            setWeather(data);
+        } catch (error) {
+            setLocationError(error.message);
+            setWeather(null);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    getWeatherByCoordinates(latitude, longitude);
-                },
+                handleGeolocation,
                 (error) => {
                     setLocationError('Accès à la géolocalisation refusé');
-                    console.error(error)
+                    console.error(error);
                 }
             );
         } else {
             setLocationError('Géolocalisation non supportée par ce navigateur');
         }
-    }, []);
+    }, [handleGeolocation]);
 
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-900 p-4 md:p-8 animate__animated animate__fadeIn animate__delay-1s">
-            <div className="bg-gray-800 p-6 md:p-8 rounded-lg shadow-xl max-w-md w-full animate__animated animate__fadeIn animate__delay-2s">
-                <h1 className="text-2xl md:text-4xl font-extrabold text-white text-center mb-4 md:mb-6 animate__animated animate__fadeIn animate__delay-3s">Application Météo</h1>
-                <form onSubmit={getWeatherByCity} className="flex flex-col md:flex-row mb-4 md:mb-6">
+        <div className="flex justify-center items-center min-h-screen bg-gray-900 p-4 md:p-8 animate__animated animate__fadeIn animate__faster">
+            <div className="bg-gray-800 p-6 md:p-8 rounded-lg shadow-xl max-w-md w-full animate__animated animate__fadeInUp animate__faster">
+                <h1 className="text-2xl md:text-4xl font-extrabold text-white text-center mb-4 md:mb-6 animate__animated animate__fadeInDown animate__faster">
+                    Application Météo
+                </h1>
+                
+                <form onSubmit={handleCitySearch} className="flex flex-col md:flex-row mb-4 md:mb-6 animate__animated animate__fadeIn animate__faster">
                     <input
                         type="text"
-                        className="flex-1 px-4 py-2 mb-2 md:mb-0 md:mr-2 rounded-lg border-2 border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 px-4 py-2 mb-2 md:mb-0 md:mr-2 rounded-lg border-2 border-gray-600 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300"
                         placeholder="Entrez le nom de la ville"
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
+                        aria-label="Nom de la ville"
                     />
                     <button
                         type="submit"
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-300 ease-in-out"
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all duration-300 disabled:opacity-50"
+                        disabled={isLoading || !city.trim()}
                     >
-                        Rechercher
+                        {isLoading ? 'Chargement...' : 'Rechercher'}
                     </button>
                 </form>
 
-                {error && <p className="text-red-500 text-center mb-4 animate__animated animate__shakeX animate__delay-4s">{error}</p>}
-                {locationError && <p className="text-red-500 text-center mb-4 animate__animated animate__shakeX animate__delay-4s">{locationError}</p>}
+                {error && (
+                    <p role="alert" className="text-red-500 text-center mb-4 animate__animated animate__shakeX animate__faster">
+                        {error}
+                    </p>
+                )}
+                
+                {locationError && (
+                    <p role="alert" className="text-red-500 text-center mb-4 animate__animated animate__shakeX animate__faster">
+                        {locationError}
+                    </p>
+                )}
 
-                {weather && (
-                    <div className="text-center animate__animated animate__fadeIn animate__delay-5s text-white">
-                        <h2 className="text-xl md:text-3xl font-bold">{weather.name}</h2>
-                        <p className="text-lg md:text-2xl my-2">{weather.main.temp}°C</p>
-                        <p className="text-base md:text-lg capitalize">{weather.weather[0].description}</p>
-                        <div className="mt-4">
-                            <img
-                                src={`http://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`}
-                                alt="weather icon"
-                                className="w-20 h-20 md:w-24 md:h-24 mx-auto"
-                            />
-                        </div>
-                        <div className="mt-4 text-left">
-                            <p><span className="font-semibold">Humidité:</span> {weather.main.humidity}%</p>
-                            <p><span className="font-semibold">Pression:</span> {weather.main.pressure} hPa</p>
-                            <p><span className="font-semibold">Vitesse du vent:</span> {weather.wind.speed} m/s</p>
-                        </div>
+                {isLoading ? (
+                    <div className="text-center text-white animate__animated animate__pulse animate__infinite">
+                        <p>Chargement des données météo...</p>
                     </div>
+                ) : (
+                    <MemoizedWeatherDisplay weather={weather} />
                 )}
             </div>
         </div>
