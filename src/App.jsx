@@ -65,7 +65,7 @@ function App() {
         <div className="flex justify-center items-center min-h-screen bg-gray-900 p-4 md:p-8 animate__animated animate__fadeIn animate__faster">
             <div className="bg-gray-800 p-6 md:p-8 rounded-lg shadow-xl max-w-md w-full animate__animated animate__fadeInUp animate__faster">
                 <h1 className="text-2xl md:text-4xl font-extrabold text-white text-center mb-4 md:mb-6 animate__animated animate__fadeInDown animate__faster">
-                    Application Météo
+                    WeatherScope
                 </h1>
                 
                 <form onSubmit={handleCitySearch} className="flex flex-col md:flex-row mb-4 md:mb-6 animate__animated animate__fadeIn animate__faster">

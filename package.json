@@ -1,5 +1,5 @@
 {
-  "name": "read_meteo",
+  "name": "weatherscope",
   "private": true,
   "version": "0.0.0",
   "type": "module",
